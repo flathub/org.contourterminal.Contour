@@ -87,3 +87,5 @@ modules:
 
       - type: patch
         path: flatpak-tweaks.patch
+      - type: patch
+        path: post-fixes-and-screenshot.patch
