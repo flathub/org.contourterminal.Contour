@@ -1,0 +1,12 @@
+diff --color -r -u contour-0.3.2.202/src/terminal/pty/LinuxPty.cpp contour-0.3.2.202.pty-fix/src/terminal/pty/LinuxPty.cpp
+--- contour-0.3.2.202/src/terminal/pty/LinuxPty.cpp	2022-07-07 16:23:52.000000000 +0200
++++ contour-0.3.2.202.pty-fix/src/terminal/pty/LinuxPty.cpp	2022-08-27 22:28:52.287914662 +0200
+@@ -132,7 +132,7 @@
+ 
+     setsid();
+ 
+-#if defined(TIOCSCTTY)
++#if 0 // defined(TIOCSCTTY)
+     if (ioctl(_slaveFd, TIOCSCTTY, nullptr) == -1)
+         return false;
+ #endif
