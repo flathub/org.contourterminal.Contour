@@ -84,3 +84,6 @@ modules:
       #     - target
       #     - _deps
       # }}}
+
+      - type: patch
+        path: flatpak-metainfo.patch
