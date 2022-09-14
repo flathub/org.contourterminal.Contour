@@ -83,3 +83,6 @@ modules:
       #     - target
       #     - _deps
       # }}}
+
+      - type: patch
+        path: metainfo.patch
