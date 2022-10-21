@@ -38,8 +38,8 @@ modules:
 
       - type: archive
         dest: _deps/sources/libunicode
-        url: https://github.com/contour-terminal/libunicode/archive/48db4b37a5cb744608369bde09c3c7003080e0f6.tar.gz
-        sha256: a35f7abfced9ca8fe7333e65cddad026772ecf03ead8c81a89c9017cb2183e8b
+        url: https://github.com/contour-terminal/libunicode/archive/8e31db86d52c33240028586d5d504b219dfa7c19.tar.gz
+        sha256: 15ba4d1bb15a3e7b748bc2400a4a1682886334cde5000fa18f20f5f99aa9bf5e
 
       - type: archive
         dest: _deps/sources/libunicode/_ucd/ucd-15.0.0
