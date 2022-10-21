@@ -15,6 +15,7 @@ modules:
   - name: contour
     buildsystem: cmake-ninja
     config-opts:
+      - "-DCONTOUR_BUILD_FOR_FLATPAK=ON"
       - "-DCONTOUR_INSTALL_TOOLS=ON"
       - "-DCONTOUR_TESTING=OFF"
       - "-DLIBTERMINAL_TESTING=OFF"
@@ -37,8 +38,15 @@ modules:
 
       - type: archive
         dest: _deps/sources/libunicode
-        url: https://github.com/contour-terminal/libunicode/archive/f464e0ffdb560cd20d8556226248d36e1b85d1a3.tar.gz
-        sha256: 7aae2d8002638de57060d573a750cde2c956cd019edd37d04e7e5305309fa122
+        url: https://github.com/contour-terminal/libunicode/archive/48db4b37a5cb744608369bde09c3c7003080e0f6.tar.gz
+        sha256: a35f7abfced9ca8fe7333e65cddad026772ecf03ead8c81a89c9017cb2183e8b
+
+      - type: archive
+        dest: _deps/sources/libunicode/_ucd/ucd-15.0.0
+        dest-filename: ucd-15.0.0.zip
+        url: https://www.unicode.org/Public/15.0.0/ucd/UCD.zip
+        sha256: 5fbde400f3e687d25cc9b0a8d30d7619e76cb2f4c3e85ba9df8ec1312cb6718c
+        strip-components: 0
 
       - type: archive
         dest: _deps/sources/range-v3
@@ -74,8 +82,8 @@ modules:
 
       # {{{ main contour source tree
       - type: archive
-        url: https://github.com/contour-terminal/contour/archive/refs/tags/v0.3.4.223.tar.gz
-        sha256: 80ead0651bc7b523e2aae0f59cb578b40f3b0f73cc92d9cef6cb4dadc55926ff
+        url: https://github.com/contour-terminal/contour/archive/refs/tags/v0.3.5.238.tar.gz
+        sha256: a7d90ef15e24ccc91fe99b7726f010d3125050f902aa53b3a817f8276a205855
 
       # - type: dir
       #   path: /home/christianparpart/projects/contour
@@ -84,5 +92,5 @@ modules:
       #     - _deps
       # }}}
 
-      - type: patch
-        path: metainfo.patch
+      # - type: patch
+      #   path: metainfo.patch
