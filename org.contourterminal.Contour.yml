@@ -82,8 +82,8 @@ modules:
 
       # {{{ main contour source tree
       - type: archive
-        url: https://github.com/contour-terminal/contour/archive/refs/tags/v0.3.8.247.tar.gz
-        sha256: c484b06b8038d5c6aefc7255a0161d36dfaab4f5a0a0283859016619a9c07427
+        url: https://github.com/contour-terminal/contour/archive/refs/tags/v0.3.9.250.tar.gz
+        sha256: 1c08313e800af34face3abf0dbeed5183fa87d62621a190050186560eb47e412
 
       # - type: dir
       #   path: /home/christianparpart/projects/contour
