@@ -38,8 +38,8 @@ modules:
 
       - type: archive
         dest: _deps/sources/libunicode
-        url: https://github.com/contour-terminal/libunicode/archive/8e31db86d52c33240028586d5d504b219dfa7c19.tar.gz
-        sha256: 15ba4d1bb15a3e7b748bc2400a4a1682886334cde5000fa18f20f5f99aa9bf5e
+        url: https://github.com/contour-terminal/libunicode/archive/f29b88dd376a19bb203eb772a7b61a5c03f3b8c1.tar.gz
+        sha256: 6564704f0483d912e41956a593cc65d8eb376c7dbc109ac26f7a5fb8c450430c
 
       - type: archive
         dest: _deps/sources/libunicode/_ucd/ucd-15.0.0
@@ -82,8 +82,8 @@ modules:
 
       # {{{ main contour source tree
       - type: archive
-        url: https://github.com/contour-terminal/contour/archive/refs/tags/v0.3.9.250.tar.gz
-        sha256: 1c08313e800af34face3abf0dbeed5183fa87d62621a190050186560eb47e412
+        url: https://github.com/contour-terminal/contour/archive/refs/tags/v0.3.10.257.tar.gz
+        sha256: e6371d514b723b6d31379a277968ba6f6ea4465ebb55f865b6373d7b68c7592c
 
       # - type: dir
       #   path: /home/christianparpart/projects/contour
