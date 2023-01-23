@@ -1,15 +1,12 @@
-diff '--color=auto' -u a/metainfo.xml b/metainfo.xml
---- a/metainfo.xml	2022-12-24 22:03:53.000000000 +0100
-+++ b/metainfo.xml	2022-12-25 00:04:28.915367420 +0100
+diff '--color=auto' -u contour-0.3.10.257/metainfo.xml contour-0.3.10.257.modified/metainfo.xml
+--- contour-0.3.10.257/metainfo.xml	2023-01-22 22:13:49.000000000 +0100
++++ contour-0.3.10.257.modified/metainfo.xml	2023-01-23 08:51:46.513885044 +0100
 @@ -103,7 +103,7 @@
  
      -->
  
--    <release version="0.3.9" urgency="medium" type="development">
-+    <release version="0.3.9" urgency="medium" date="2022-12-24">
+-    <release version="0.3.10" urgency="medium" type="development">
++    <release version="0.3.10" urgency="medium" date="2023-01-22">
        <description>
          <ul>
-           <li>Fixes statusline clock to show the correct local time.</li>
-Common subdirectories: a/scripts and b/scripts
-Common subdirectories: a/src and b/src
-Common subdirectories: a/test and b/test
+           <li>Fixes `initial_working_directory` setting being ignored (#946).</li>
