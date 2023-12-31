@@ -1,7 +1,7 @@
 app-id: org.contourterminal.Contour
 name: Contour Terminal Emulator
 runtime: org.kde.Platform
-runtime-version: '5.15-22.08'
+runtime-version: '6.6'
 sdk: org.kde.Sdk
 command: contour
 finish-args:
@@ -15,9 +15,11 @@ modules:
   - name: contour
     buildsystem: cmake-ninja
     config-opts:
+      - "-DCONTOUR_QT_VERSION=6"
       - "-DCONTOUR_INSTALL_TOOLS=ON"
       - "-DCONTOUR_TESTING=OFF"
       - "-DLIBTERMINAL_TESTING=OFF"
+      - "-DCRISPY_TESTING=OFF"
     sources:
       # {{{ constructing `_deps` folder
       - type: archive
@@ -27,8 +29,8 @@ modules:
 
       - type: archive
         dest: _deps/sources/fmt
-        url: https://github.com/fmtlib/fmt/archive/refs/tags/9.1.0.tar.gz
-        sha256: 5dea48d1fcddc3ec571ce2058e13910a0d4a6bab4cc09a809d8b1dd1c88ae6f2
+        url: https://github.com/fmtlib/fmt/archive/refs/tags/10.0.0.tar.gz
+        sha256: ede1b6b42188163a3f2e0f25ad5c0637eca564bd8df74d02e31a311dd6b37ad8
 
       - type: archive
         dest: _deps/sources/termbench-pro
@@ -36,9 +38,14 @@ modules:
         sha256: d83360df9dc1f2f4bcdc2f347596fe0facc08b16da49901a08d8a5611f48c9b4
 
       - type: archive
+        dest: _deps/sources/boxed-cpp
+        url: https://github.com/contour-terminal/boxed-cpp/archive/refs/tags/v1.1.0.tar.gz
+        sha256: dd1c78c3bad24e777bc33aa19e8e8efb8c579f8faa3220592c3aae4d7b103bf0
+
+      - type: archive
         dest: _deps/sources/libunicode
-        url: https://github.com/contour-terminal/libunicode/archive/b1b017c466038655872e1968acfc6a9880cf5d9f.tar.gz
-        sha256: a10a3bca1ad16f251370ad8a586b7a4e47642d96b23209e98c793962bee87e11
+        url: https://github.com/contour-terminal/libunicode/archive/23d7b30166a914b10526bb8fe7a469a9610c07dc.tar.gz
+        sha256: aa1f895412e19ba28370378347755a22208d93ec84e7860d99afec3a15b21895
 
       - type: archive
         dest: _deps/sources/libunicode/_ucd/ucd-15.0.0
@@ -49,13 +56,13 @@ modules:
 
       - type: archive
         dest: _deps/sources/range-v3
-        url: https://github.com/ericniebler/range-v3/archive/refs/tags/0.11.0.tar.gz
-        sha256: 376376615dbba43d3bef75aa590931431ecb49eb36d07bb726a19f680c75e20c
+        url: https://github.com/ericniebler/range-v3/archive/refs/tags/0.12.0.tar.gz
+        sha256: 015adb2300a98edfceaf0725beec3337f542af4915cec4d0b89fa0886f4ba9cb
 
       - type: archive
         dest: _deps/sources/Catch2
-        url: https://github.com/catchorg/Catch2/archive/refs/tags/v2.13.7.tar.gz
-        sha256: 3cdb4138a072e4c0290034fe22d9f0a80d3bcfb8d7a8a5c49ad75d3a5da24fae
+        url: https://github.com/catchorg/Catch2/archive/refs/tags/v3.4.0.tar.gz
+        sha256: 122928b814b75717316c71af69bd2b43387643ba076a6ec16e7882bfb2dfacbb
 
       - type: archive
         dest: _deps/sources/yaml-cpp
@@ -71,6 +78,9 @@ modules:
           add_subdirectory(Catch2 EXCLUDE_FROM_ALL)
           add_subdirectory(fmt EXCLUDE_FROM_ALL)
           add_subdirectory(range-v3 EXCLUDE_FROM_ALL)
+          macro(ContourThirdParties_Embed_boxed_cpp)
+              add_subdirectory(${ContourThirdParties_SRCDIR}/boxed-cpp EXCLUDE_FROM_ALL)
+          endmacro()
           macro(ContourThirdParties_Embed_termbench_pro)
               add_subdirectory(${ContourThirdParties_SRCDIR}/termbench-pro EXCLUDE_FROM_ALL)
           endmacro()
@@ -81,8 +91,8 @@ modules:
 
       # {{{ main contour source tree
       - type: archive
-        url: https://github.com/contour-terminal/contour/archive/refs/tags/v0.3.12.262.tar.gz
-        sha256: f9d7b154745e25e20c93f100b30934621460563f524782dca979ceed8f4ed0d2
+        url: https://github.com/contour-terminal/contour/archive/refs/tags/v0.4.0.6245.tar.gz
+        sha256: a46ee637d793d72ffdc8b0570b9cc1ba90729d2fa5b571b74b815c7562ec8894
 
       # - type: dir
       #   path: /home/christianparpart/projects/contour
@@ -91,8 +101,5 @@ modules:
       #     - _deps
       # }}}
 
-      - type: patch
-        path: code.patch
-
-      - type: patch
-        path: metainfo.patch
+      # - type: patch
+      #   path: some-patch-file.patch
