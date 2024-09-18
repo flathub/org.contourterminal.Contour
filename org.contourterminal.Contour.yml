@@ -40,13 +40,13 @@ modules:
 
       - type: archive
         dest: _deps/sources/boxed-cpp
-        url: https://github.com/contour-terminal/boxed-cpp/archive/refs/tags/v1.2.2.tar.gz
-        sha256: 911cb60e52efcd7a28446d51b537e15eac6e3078b6bda11c4968f7aa04f3aeb6
+        url: https://github.com/contour-terminal/boxed-cpp/archive/refs/tags/v1.4.2.tar.gz
+        sha256: 37366d1cdb4190a1fdc797583a5fcc2f4bb4a4af125a3c20ebd8c3a0f9db9b00
 
       - type: archive
         dest: _deps/sources/libunicode
-        url: https://github.com/contour-terminal/libunicode/archive/23d7b30166a914b10526bb8fe7a469a9610c07dc.tar.gz
-        sha256: aa1f895412e19ba28370378347755a22208d93ec84e7860d99afec3a15b21895
+        url: https://github.com/contour-terminal/libunicode/archive/28aacf5191450775f1f336aba1d6b65673b0ba9f.tar.gz
+        sha256: 9ffe9c8d7caf1d9b164d851af364ff33573c429bd0bc797dbacd04f81a087019
 
       - type: archive
         dest: _deps/sources/libunicode/_ucd/ucd-15.0.0
@@ -67,15 +67,23 @@ modules:
 
       - type: archive
         dest: _deps/sources/yaml-cpp
-        url: https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.7.0.tar.gz
-        sha256: 43e6a9fcb146ad871515f0d0873947e5d497a1c9c60c58cb102a97b47208b7c3
+        url: https://github.com/jbeder/yaml-cpp/archive/refs/tags/0.8.0.tar.gz
+        sha256: fbe74bbdcee21d656715688706da3c8becfd946d92cd44705cc6098bb23b3a16
+        # url: https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.7.0.tar.gz
+        # sha256: 43e6a9fcb146ad871515f0d0873947e5d497a1c9c60c58cb102a97b47208b7c3
+        # url: https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.6.3.tar.gz
+        # sha256: 77ea1b90b3718aa0c324207cb29418f5bced2354c2e483a9523d98c3460af1ed
 
       - type: inline
         dest: _deps/sources
         dest-filename: CMakeLists.txt
         contents: |
           add_subdirectory(GSL EXCLUDE_FROM_ALL)
+
           add_subdirectory(yaml-cpp EXCLUDE_FROM_ALL)
+          # add yaml-cpp to global include search path (in parent scope)
+          set(YAML_CPP_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yaml-cpp/include PARENT_SCOPE)
+
           add_subdirectory(Catch2 EXCLUDE_FROM_ALL)
           add_subdirectory(fmt EXCLUDE_FROM_ALL)
           add_subdirectory(range-v3 EXCLUDE_FROM_ALL)
@@ -92,8 +100,8 @@ modules:
 
       # {{{ main contour source tree
       - type: archive
-        url: https://github.com/contour-terminal/contour/archive/refs/tags/v0.4.3.6442.tar.gz
-        sha256: 859910a5330d9dcf628dfcb6f767807dbdaf187e550ac67966c1e8a713c1567e
+        url: https://github.com/contour-terminal/contour/archive/refs/tags/v0.5.0.7168.tar.gz
+        sha256: e7e8cde0ab0ada90e20d5bc279a415d8288eb8d9c96ca5c8b49ce80397cfa428
 
       # - type: dir
       #   path: /home/christianparpart/projects/contour
@@ -102,5 +110,5 @@ modules:
       #     - _deps
       # }}}
 
-      - type: patch
-        path: post.patch
+      # - type: patch
+      #   path: post.patch

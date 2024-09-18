@@ -1,71 +1,28 @@
-diff --git a/metainfo.xml b/metainfo.xml
-index 6d7a3fe2..168a0d70 100644
---- a/metainfo.xml
-+++ b/metainfo.xml
-@@ -104,7 +104,7 @@
+diff --git a/src/contour/CMakeLists.txt b/src/contour/CMakeLists.txt
+index 86c8e61f..d6e20a57 100644
+--- a/src/contour/CMakeLists.txt
++++ b/src/contour/CMakeLists.txt
+@@ -206,11 +206,9 @@ if(FREEBSD)
+     target_link_directories(contour PUBLIC "/usr/local/lib")
+ endif()
  
-     -->
+-if (TARGET yaml-cpp::yaml-cpp)
+-    set(YAML_CPP_LIBRARIES yaml-cpp::yaml-cpp)
+-else()
+-    set(YAML_CPP_LIBRARIES yaml-cpp)
+-endif()
++#if(YAML_CPP_INCLUDE_DIR)
++    target_include_directories(contour PRIVATE "${YAML_CPP_INCLUDE_DIR}")
++#endif()
  
--    <release version="0.4.3" urgency="medium" type="development">
-+    <release version="0.4.3" urgency="medium" date="2024-02-04">
-       <description>
-         <ul>
-           <li>Fixes dead lock bug on mouse selection.</li>
-diff --git a/src/vtpty/Process_unix.cpp b/src/vtpty/Process_unix.cpp
-index 706d65b0..451a4a91 100644
---- a/src/vtpty/Process_unix.cpp
-+++ b/src/vtpty/Process_unix.cpp
-@@ -174,9 +174,9 @@ void Process::start()
-                     fmt::format("--env=TERMINFO={}", terminfoBaseDirectory.generic_string()));
-                 if (stdoutFastPipe)
-                 {
-+                    realArgs.emplace_back(fmt::format("--forward-fd={}", StdoutFastPipeFdStr));
-                     realArgs.emplace_back(
-                         fmt::format("--env={}={}", StdoutFastPipeEnvironmentName, StdoutFastPipeFdStr));
--                    realArgs.emplace_back(fmt::format("--forward-fd={}", StdoutFastPipeFdStr));
-                 }
-                 if (!_d->cwd.empty())
-                     realArgs.emplace_back(fmt::format("--directory={}", _d->cwd.generic_string()));
-diff --git a/src/vtpty/UnixPty.cpp b/src/vtpty/UnixPty.cpp
-index d5abeacb..d4182b12 100644
---- a/src/vtpty/UnixPty.cpp
-+++ b/src/vtpty/UnixPty.cpp
-@@ -1,4 +1,5 @@
- // SPDX-License-Identifier: Apache-2.0
-+#include <vtpty/Process.h>
- #include <vtpty/UnixPty.h>
- #include <vtpty/UnixUtils.h>
+ target_link_libraries(contour
+     PRIVATE
+@@ -218,7 +216,7 @@ target_link_libraries(contour
+     crispy::core
+     vtbackend
+     vtrasterizer
+-    ${YAML_CPP_LIBRARIES}
++    yaml-cpp
+ )
  
-@@ -153,11 +154,30 @@ bool UnixPty::Slave::login()
-     // But doing it ourselfs allows for a little more flexibility.
-     // return login_tty(_slaveFd) == 0;
- 
-+    sigset_t signals;
-+    sigemptyset(&signals);
-+    sigprocmask(SIG_SETMASK, &signals, nullptr);
-+
-+    // clang-format off
-+    struct sigaction act {};
-+    act.sa_handler = SIG_DFL;
-+    // clang-format on
-+
-+    for (auto const signo: { SIGCHLD, SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGALRM })
-+        sigaction(signo, &act, nullptr);
-+
-     setsid();
- 
- #if defined(TIOCSCTTY)
--    if (ioctl(_slaveFd, TIOCSCTTY, nullptr) == -1)
--        return false;
-+    // Set the controlling terminal, unless we are running inside a flatpak.
-+    // Because flatpak does not allow setting the controlling terminal.
-+    // - https://github.com/flatpak/flatpak/issues/3697
-+    // - https://github.com/flatpak/flatpak/issues/3285
-+    if (!Process::isFlatpak())
-+    {
-+        if (ioctl(_slaveFd, TIOCSCTTY, nullptr) == -1)
-+            return false;
-+    }
- #endif
- 
-     for (int const fd: { 0, 1, 2 })
+ # {{{ GUI: Declare Qt build dependencies
