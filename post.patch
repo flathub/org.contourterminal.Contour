@@ -1,8 +1,8 @@
 diff --git a/src/contour/CMakeLists.txt b/src/contour/CMakeLists.txt
-index 86c8e61f..d6e20a57 100644
+index 86c8e61f..c6825f07 100644
 --- a/src/contour/CMakeLists.txt
 +++ b/src/contour/CMakeLists.txt
-@@ -206,11 +206,9 @@ if(FREEBSD)
+@@ -206,11 +206,11 @@ if(FREEBSD)
      target_link_directories(contour PUBLIC "/usr/local/lib")
  endif()
  
@@ -12,12 +12,14 @@ index 86c8e61f..d6e20a57 100644
 -    set(YAML_CPP_LIBRARIES yaml-cpp)
 -endif()
 +#if(YAML_CPP_INCLUDE_DIR)
-+    target_include_directories(contour PRIVATE "${YAML_CPP_INCLUDE_DIR}")
++    set(YAML_CPP_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../_deps/sources/yaml-cpp/include")
++    include_directories(${YAML_CPP_INCLUDE_DIR})
++    target_include_directories(contour PRIVATE ${YAML_CPP_INCLUDE_DIR})
 +#endif()
  
  target_link_libraries(contour
      PRIVATE
-@@ -218,7 +216,7 @@ target_link_libraries(contour
+@@ -218,7 +218,7 @@ target_link_libraries(contour
      crispy::core
      vtbackend
      vtrasterizer
