@@ -118,3 +118,8 @@ modules:
       - type: archive
         url: https://github.com/contour-terminal/contour/archive/refs/tags/v0.8.0.9335.tar.gz
         sha256: 068ba98c3c803fc9639c26b1f91c6faa9fc96e1c7b5637bbf338c240fc36be46
+      # 0.8.0 does not link under GCC -O3: a config-enum reader template is defined in Config.cpp
+      # only, and the instantiations GlobalOverrides.cpp needs are inlined away there. Upstream
+      # fix: contour-terminal/contour#2174. Drop this with the next release.
+      - type: patch
+        path: config-enum-reader-in-header.patch
