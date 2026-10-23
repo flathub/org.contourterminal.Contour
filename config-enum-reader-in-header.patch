@@ -1,0 +1,342 @@
+From e63db64edeb8f922bbf50d03c5ea7556407b80ac Mon Sep 17 00:00:00 2001
+From: Christian Parpart <christian@parpart.family>
+Date: Fri, 23 Oct 2026 08:01:38 +0200
+Subject: [PATCH] config: define the config-enum reader in a header, so every
+ caller links
+
+YAMLConfigReader::loadFromEntry() for a ConfigEnumConcept enum was a member
+template declared in Config.hpp and defined in Config.cpp only. GlobalOverrides.cpp
+calls it for TabBarPosition, TabBarVisibility, UiStyle and WindowControlStyle, and
+so linked only while Config.cpp's object happened to keep an out-of-line copy of
+those four instantiations. GCC at -O3 inlines them all and keeps none, so the
+Flathub build of 0.8.0 fails to link contour with four undefined references.
+
+The template is now defined in Config.hpp, and loadConfigEnum() and placeOf(),
+which it calls, move out of Config.cpp's anonymous namespace into
+ConfigEnumReader.hpp, so each translation unit instantiates what it reads.
+
+Signed-off-by: Christian Parpart <christian@parpart.family>
+---
+ src/contour/config/CMakeLists.txt       |   1 +
+ src/contour/config/Config.cpp           | 101 ++++--------------------
+ src/contour/config/Config.hpp           |   6 +-
+ src/contour/config/ConfigEnumReader.hpp |  92 +++++++++++++++++++++
+ 4 files changed, 112 insertions(+), 88 deletions(-)
+ create mode 100644 src/contour/config/ConfigEnumReader.hpp
+
+diff --git a/src/contour/config/CMakeLists.txt b/src/contour/config/CMakeLists.txt
+index 64a903f6..17fa0006 100644
+--- a/src/contour/config/CMakeLists.txt
++++ b/src/contour/config/CMakeLists.txt
+@@ -12,6 +12,7 @@ add_library(contour_config STATIC
+     ConfigDocumentation.hpp
+     ConfigEnum.hpp
+     ConfigEnumInfo.hpp
++    ConfigEnumReader.hpp
+     FileOpenerTemplate.cpp FileOpenerTemplate.hpp
+     FinishNotificationConfig.hpp
+     GlobalOverrides.cpp GlobalOverrides.hpp
+diff --git a/src/contour/config/Config.cpp b/src/contour/config/Config.cpp
+index 2cd547ac..8daea675 100644
+--- a/src/contour/config/Config.cpp
++++ b/src/contour/config/Config.cpp
+@@ -2388,76 +2388,6 @@ void YAMLConfigReader::loadFromEntry(YAML::Node const& node,
+ 
+ namespace
+ {
+-    /// Where @p node stands in its file, as yaml-cpp's own errors say it: one-based.
+-    /// @param node A node parsed from a file.
+-    /// @return `line L, column C`.
+-    [[nodiscard]] std::string placeOf(YAML::Node const& node)
+-    {
+-        auto const mark = node.Mark();
+-        return std::format("line {}, column {}", mark.line + 1, mark.column + 1);
+-    }
+-
+-    /// Reads a configuration enum spelled as one of the tokens its parser accepts.
+-    ///
+-    /// Case-insensitive, and an unrecognized value is reported rather than silently accepted -- a typo
+-    /// in a visible appearance setting should not pass unnoticed. It still leaves @p where at its
+-    /// default, so a bad value costs a log line rather than a failed startup. Mirrors the GuiTheme
+-    /// reader below.
+-    ///
+-    /// @param node   The mapping to read from.
+-    /// @param entry  The key within @p node.
+-    /// @param shownAs What a diagnostic calls @p entry: its key path from the document's root.
+-    /// @param where  Receives the value, and is left untouched when it is not recognized.
+-    /// @param logger The reader's trace category, passed in because it is a member of the reader.
+-    /// @param parse  Maps a spelling to a value. Defaults to the ConfigEnum.hpp token table; the
+-    ///               text_shaper enums pass their own `make*()`, since a `contour::config` table
+-    ///               cannot be hung off a type owned by a lower layer.
+-    /// @param accepted The spellings to name in the diagnostic of an unknown value, already
+-    ///               formatted as a list; empty when the set is too large or too open to enumerate.
+-    /// @return Whether @p entry was present and recognized, so a caller can add a fallback (a
+-    ///         deprecated spelling, say) without duplicating the reading and the reporting.
+-    template <typename Enum, typename Parser = decltype(&configEnumFromToken<Enum>)>
+-    bool loadConfigEnum(YAML::Node const& node,
+-                        std::string const& entry,
+-                        std::string const& shownAs,
+-                        Enum& where,
+-                        core::log::Category const& logger,
+-                        Parser parse = configEnumFromToken<Enum>,
+-                        std::string_view accepted = {})
+-    {
+-        auto const child = node[entry];
+-        if (!child)
+-            return false;
+-
+-        // Diagnosed here rather than left to as<std::string>() to throw, so that only this value is
+-        // lost and not the siblings read after it.
+-        if (child.IsSequence() || child.IsMap())
+-        {
+-            errorLog()("{} ({}) takes a single word, not a {}; keeping {}.",
+-                       shownAs,
+-                       placeOf(child),
+-                       child.IsMap() ? "map" : "list",
+-                       where);
+-            return false;
+-        }
+-
+-        auto const rawValue = child.as<std::string>();
+-        logger()("Loading entry: {}, value {}", entry, rawValue);
+-        if (auto const value = parse(rawValue))
+-        {
+-            where = *value;
+-            return true;
+-        }
+-        errorLog()("Unknown value for {} ({}): '{}'; keeping {}.{}{}",
+-                   shownAs,
+-                   placeOf(child),
+-                   rawValue,
+-                   where,
+-                   accepted.empty() ? "" : " Accepted values: ",
+-                   accepted);
+-        return false;
+-    }
+-
+     /// The decorator names a configuration file may use, comma separated, for a diagnostic.
+     [[nodiscard]] std::string acceptedDecoratorNames()
+     {
+@@ -2472,19 +2402,13 @@ namespace
+     }
+ } // namespace
+ 
+-template <ConfigEnumConcept Enum>
+-void YAMLConfigReader::loadFromEntry(YAML::Node const& node, std::string const& entry, Enum& where)
+-{
+-    (void) loadConfigEnum(node, entry, keyPathTo(node, entry), where, logger);
+-}
+-
+ void YAMLConfigReader::loadFromEntry(YAML::Node const& node,
+                                      std::string const& entry,
+                                      vtrasterizer::Decorator& where)
+ {
+     // The spellings are vtrasterizer::DecoratorNames' (and its aliases'), the table the writer and the
+     // settings page read too; a miss is reported and keeps the value `where` already holds.
+-    (void) loadConfigEnum(
++    (void) detail::loadConfigEnum(
+         node,
+         entry,
+         keyPathTo(node, entry),
+@@ -2527,14 +2451,14 @@ void YAMLConfigReader::loadFromEntry(YAML::Node const& node, std::string const&
+         return;
+     }
+ 
+-    loadConfigEnum(node, entry, keyPathTo(node, entry), where, logger, text::makeFontSlant);
++    detail::loadConfigEnum(node, entry, keyPathTo(node, entry), where, logger, text::makeFontSlant);
+ }
+ 
+ void YAMLConfigReader::loadFromEntry(YAML::Node const& node,
+                                      std::string const& entry,
+                                      text::FontWeight& where)
+ {
+-    loadConfigEnum(node, entry, keyPathTo(node, entry), where, logger, text::makeFontWeight);
++    detail::loadConfigEnum(node, entry, keyPathTo(node, entry), where, logger, text::makeFontWeight);
+ }
+ // NOLINTEND(readability-convert-member-functions-to-static)
+ 
+@@ -2771,7 +2695,7 @@ void YAMLConfigReader::loadFromEntry(YAML::Node const& node,
+     {
+         errorLog()("{} ({}) takes a list, such as {}; keeping {}.",
+                    keyPathTo(node, entry),
+-                   placeOf(child),
++                   detail::placeOf(child),
+                    Writer::format(vtbackend::AllScrollbarMarkSources),
+                    Writer::format(where));
+         return;
+@@ -2782,8 +2706,9 @@ void YAMLConfigReader::loadFromEntry(YAML::Node const& node,
+     {
+         if (!item.IsScalar())
+         {
+-            errorLog()(
+-                "{} ({}) lists something other than a word; ignored.", keyPathTo(node, entry), placeOf(item));
++            errorLog()("{} ({}) lists something other than a word; ignored.",
++                       keyPathTo(node, entry),
++                       detail::placeOf(item));
+             continue;
+         }
+ 
+@@ -2793,8 +2718,10 @@ void YAMLConfigReader::loadFromEntry(YAML::Node const& node,
+         if (auto const source = configEnumFromToken<vtbackend::ScrollbarMarkSource>(token))
+             sources.enable(*source);
+         else
+-            errorLog()(
+-                "Unknown value in {} ({}): '{}'; ignored.", keyPathTo(node, entry), placeOf(item), token);
++            errorLog()("Unknown value in {} ({}): '{}'; ignored.",
++                       keyPathTo(node, entry),
++                       detail::placeOf(item),
++                       token);
+     }
+     where = sources;
+ }
+@@ -3052,7 +2979,7 @@ void YAMLConfigReader::loadFromEntry(YAML::Node const& node,
+         return std::nullopt;
+     };
+ 
+-    loadConfigEnum(node, entry, keyPathTo(node, entry), where, logger, parseEngine);
++    detail::loadConfigEnum(node, entry, keyPathTo(node, entry), where, logger, parseEngine);
+ }
+ 
+ void YAMLConfigReader::loadFromEntry(YAML::Node const& node,
+@@ -3077,14 +3004,14 @@ void YAMLConfigReader::loadFromEntry(YAML::Node const& node,
+         return std::nullopt;
+     };
+ 
+-    loadConfigEnum(node, entry, keyPathTo(node, entry), where, logger, parseLocator);
++    detail::loadConfigEnum(node, entry, keyPathTo(node, entry), where, logger, parseLocator);
+ }
+ 
+ void YAMLConfigReader::loadFromEntry(YAML::Node const& node,
+                                      std::string const& entry,
+                                      text::RenderMode& where)
+ {
+-    loadConfigEnum(node, entry, keyPathTo(node, entry), where, logger, text::makeRenderMode);
++    detail::loadConfigEnum(node, entry, keyPathTo(node, entry), where, logger, text::makeRenderMode);
+ }
+ 
+ void YAMLConfigReader::loadFromEntry(YAML::Node const& node,
+diff --git a/src/contour/config/Config.hpp b/src/contour/config/Config.hpp
+index 8ce4e364..c3558547 100644
+--- a/src/contour/config/Config.hpp
++++ b/src/contour/config/Config.hpp
+@@ -5,6 +5,7 @@
+ #include <contour/config/BlockActionEnums.hpp>
+ #include <contour/config/ConfigDocumentation.hpp>
+ #include <contour/config/ConfigEnum.hpp>
++#include <contour/config/ConfigEnumReader.hpp>
+ #include <contour/config/FinishNotificationConfig.hpp>
+ #include <contour/config/GpuSelector.hpp>
+ #include <contour/config/SingleQuoted.hpp>
+@@ -1793,7 +1794,10 @@ struct YAMLConfigReader
+     /// @param entry The key within @p node.
+     /// @param where Receives the value.
+     template <ConfigEnumConcept Enum>
+-    void loadFromEntry(YAML::Node const& node, std::string const& entry, Enum& where);
++    void loadFromEntry(YAML::Node const& node, std::string const& entry, Enum& where)
++    {
++        (void) detail::loadConfigEnum(node, entry, keyPathTo(node, entry), where, logger);
++    }
+ 
+     template <typename V, typename T>
+     void loadFromEntry(YAML::Node const& node, std::string const& entry, boxed::boxed<V, T>& where)
+diff --git a/src/contour/config/ConfigEnumReader.hpp b/src/contour/config/ConfigEnumReader.hpp
+new file mode 100644
+index 00000000..cfb4f07a
+--- /dev/null
++++ b/src/contour/config/ConfigEnumReader.hpp
+@@ -0,0 +1,92 @@
++// SPDX-License-Identifier: Apache-2.0
++#pragma once
++
++#include <contour/config/ConfigEnumInfo.hpp>
++
++#include <core/log/LogStore.hpp>
++
++#include <yaml-cpp/yaml.h>
++
++#include <format>
++#include <string>
++#include <string_view>
++
++namespace contour::config::detail
++{
++
++/// Where @p node stands in its file, as yaml-cpp's own errors say it: one-based.
++/// @param node A node parsed from a file.
++/// @return `line L, column C`.
++[[nodiscard]] inline std::string placeOf(YAML::Node const& node)
++{
++    auto const mark = node.Mark();
++    return std::format("line {}, column {}", mark.line + 1, mark.column + 1);
++}
++
++/// Reads a configuration enum spelled as one of the tokens its parser accepts.
++///
++/// Case-insensitive, and an unrecognized value is reported rather than silently accepted -- a typo
++/// in a visible appearance setting should not pass unnoticed. It still leaves @p where at its
++/// default, so a bad value costs a log line rather than a failed startup. Mirrors the GuiTheme
++/// reader in Config.cpp.
++///
++/// It lives in a header, not in Config.cpp, because YAMLConfigReader's reader of a ConfigEnumConcept
++/// enum is a member template that every translation unit instantiates for the enums it reads.
++/// Defined in Config.cpp alone, the instantiations other files need exist only as long as the
++/// optimizer keeps an out-of-line copy there, which GCC at -O3 does not.
++///
++/// @param node   The mapping to read from.
++/// @param entry  The key within @p node.
++/// @param shownAs What a diagnostic calls @p entry: its key path from the document's root.
++/// @param where  Receives the value, and is left untouched when it is not recognized.
++/// @param logger The reader's trace category, passed in because it is a member of the reader.
++/// @param parse  Maps a spelling to a value. Defaults to the ConfigEnum.hpp token table; the
++///               text_shaper enums pass their own `make*()`, since a `contour::config` table
++///               cannot be hung off a type owned by a lower layer.
++/// @param accepted The spellings to name in the diagnostic of an unknown value, already
++///               formatted as a list; empty when the set is too large or too open to enumerate.
++/// @return Whether @p entry was present and recognized, so a caller can add a fallback (a
++///         deprecated spelling, say) without duplicating the reading and the reporting.
++template <typename Enum, typename Parser = decltype(&configEnumFromToken<Enum>)>
++bool loadConfigEnum(YAML::Node const& node,
++                    std::string const& entry,
++                    std::string const& shownAs,
++                    Enum& where,
++                    core::log::Category const& logger,
++                    Parser parse = configEnumFromToken<Enum>,
++                    std::string_view accepted = {})
++{
++    auto const child = node[entry];
++    if (!child)
++        return false;
++
++    // Diagnosed here rather than left to as<std::string>() to throw, so that only this value is
++    // lost and not the siblings read after it.
++    if (child.IsSequence() || child.IsMap())
++    {
++        errorLog()("{} ({}) takes a single word, not a {}; keeping {}.",
++                   shownAs,
++                   placeOf(child),
++                   child.IsMap() ? "map" : "list",
++                   where);
++        return false;
++    }
++
++    auto const rawValue = child.as<std::string>();
++    logger()("Loading entry: {}, value {}", entry, rawValue);
++    if (auto const value = parse(rawValue))
++    {
++        where = *value;
++        return true;
++    }
++    errorLog()("Unknown value for {} ({}): '{}'; keeping {}.{}{}",
++               shownAs,
++               placeOf(child),
++               rawValue,
++               where,
++               accepted.empty() ? "" : " Accepted values: ",
++               accepted);
++    return false;
++}
++
++} // namespace contour::config::detail
+-- 
+2.56.0
+
